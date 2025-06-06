@@ -1,29 +1,28 @@
 import './App.css';
-import Post from "./Post";
-import Header from "./Header";
-import {Route, Routes} from "react-router-dom";
-import Layout from "./Layout";
-import IndexPage from "./pages/IndexPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import {UserContextProvider} from "./UserContext";
-import CreatePost from "./pages/CreatePost";
-import PostPage from "./pages/PostPage";
-import EditPost from "./pages/EditPost";
-
+import Post from './components/Post';
+import Header from './components/Header';
+import { Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Index from './pages/Index';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import { UserContextProvider } from './UserContext';
+import Createpost from './pages/Createpost';
+import Postpage from './pages/Postpage';
+import Editpost from './pages/Editpost';
 function App() {
   return (
     <UserContextProvider>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<IndexPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/create" element={<CreatePost />} />
-          <Route path="/post/:id" element={<PostPage />} />
-          <Route path="/edit/:id" element={<EditPost />} />
-        </Route>
-      </Routes>
+    <Routes>
+      <Route path='/' element={<Layout/>}>
+      <Route index element={  <Index /> } />
+      <Route path='/login' element={<Login/>}  />
+       <Route path='/register' element={<Register/>}/>
+       <Route path='/create' element={<Createpost/>} />
+       <Route path='/edit' element={<Editpost/>} />
+      </Route>
+      
+    </Routes>
     </UserContextProvider>
   );
 }

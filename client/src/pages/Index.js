@@ -1,7 +1,7 @@
-import Post from "../Post";
+import Post from "../components/Post";
 import {useEffect, useState} from "react";
 
-export default function IndexPage() {
+export default function Index() {
   const [posts,setPosts] = useState([]);
   useEffect(() => {
     fetch('http://localhost:4000/post').then(response => {
@@ -13,7 +13,7 @@ export default function IndexPage() {
   return (
     <>
       {posts.length > 0 && posts.map(post => (
-        <Post {...post} />
+        <Post key={post._id}  {...post} />
       ))}
     </>
   );

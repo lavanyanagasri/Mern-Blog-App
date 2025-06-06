@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
 import {Navigate, useParams} from "react-router-dom";
-import Editor from "../Editor";
+import Editor from "./Editor";
 
-export default function EditPost() {
+export default function Editpost() {
   const {id} = useParams();
   const [title,setTitle] = useState('');
   const [summary,setSummary] = useState('');
