@@ -1,88 +1,106 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs');
 const User = require('./models/User');
-const Post = require('./models/Post');
-
+const Post = require('./models/Post'); // You need a Post model
 const app = express();
-const salt = bcrypt.genSaltSync(10);
-const secret = 'your_jwt_secret'; // Replace with .env in production
 
+const salt = bcrypt.genSaltSync(10);
+const jwtSecret = 'your_jwt_secret_key';
+
+// Multer setup for file uploads
 const uploadMiddleware = multer({ dest: 'uploads/' });
 
-app.use(cors({
+const corsOptions = {
   origin: 'http://localhost:3000',
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions)); 
+
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static(__dirname + '/uploads'));
+app.use('/uploads', express.static(__dirname + '/uploads')); // serve static files
 
-// MongoDB connection
+// ✅ Connect to MongoDB
 mongoose.connect('mongodb+srv://lavanyanagasri:lavanyanagasri@cluster1.pp2m8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1')
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+  .then(() => console.log('MongoDB connected!'))
+  .catch((e) => console.error('MongoDB connection error:', e));
 
-// Register
+// ✅ Register route
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const hashedPassword = bcrypt.hashSync(password, salt);
-    const userDoc = await User.create({ username, password: hashedPassword });
-    res.status(200).json({ message: 'User registered', username: userDoc.username });
+    const userDoc = await User.create({
+      username,
+      password: bcrypt.hashSync(password, salt),
+    });
+    res.status(201).json({ message: 'User created', user: { username: userDoc.username, id: userDoc._id } });
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ error: e.message });
+    res.status(400).json({ message: 'Registration failed', error: e.message });
   }
 });
 
-// Login
+// ✅ Login route
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const userDoc = await User.findOne({ username });
-  if (!userDoc) return res.status(400).json('User not found');
+  try {
+    const userDoc = await User.findOne({ username });
+    if (!userDoc) return res.status(404).json({ message: 'User not found' });
 
-  const passOk = await bcrypt.compare(password, userDoc.password);
-  if (!passOk) return res.status(400).json('Wrong credentials');
+    const isPasswordCorrect = bcrypt.compareSync(password, userDoc.password);
+    if (!isPasswordCorrect) return res.status(401).json({ message: 'Wrong credentials' });
 
-  const token = jwt.sign({ username, id: userDoc._id }, secret, { expiresIn: '7h' });
-  res.cookie('token', token).json({ id: userDoc._id, username });
+    const token = jwt.sign({ id: userDoc._id, username }, jwtSecret, {});
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+    }).json({ id: userDoc._id, username });
+  } catch (e) {
+    res.status(500).json({ message: 'Login failed', error: e.message });
+  }
 });
 
-// Profile
+// ✅ Profile route
 app.get('/profile', (req, res) => {
   const { token } = req.cookies;
-  jwt.verify(token, secret, {}, (err, info) => {
-    if (err) return res.status(401).json('Invalid token');
+  if (!token) return res.status(401).json({ message: 'No token' });
+
+  jwt.verify(token, jwtSecret, {}, (err, info) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+
     res.json(info);
   });
 });
 
-// Logout
+// ✅ Logout route
 app.post('/logout', (req, res) => {
-  res.cookie('token', '').json('Logged out');
+  res.cookie('token', '', { httpOnly: true }).json('ok');
 });
 
-// Create Post
-app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: "File not provided" });
+// ✅ Create Post route
+app.post('/post', uploadMiddleware.single('file'), (req, res) => {
+  const { token } = req.cookies;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
+  jwt.verify(token, jwtSecret, {}, async (err, info) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+
+    const { title, summary, content } = req.body;
     const { originalname, path } = req.file;
     const ext = originalname.split('.').pop();
     const newPath = `${path}.${ext}`;
     fs.renameSync(path, newPath);
 
-    const { token } = req.cookies;
-    jwt.verify(token, secret, {}, async (err, info) => {
-      if (err) return res.status(401).json({ error: "Invalid token" });
-
-      const { title, summary, content } = req.body;
+    try {
       const postDoc = await Post.create({
         title,
         summary,
@@ -90,45 +108,93 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
         cover: newPath,
         author: info.id,
       });
+      res.status(201).json(postDoc);
+    } catch (e) {
+      res.status(500).json({ message: 'Post creation failed', error: e.message });
+    }
+  });
+});
 
+app.post('/post1', uploadMiddleware.single('file'), async (req, res) => {
+  let newPath = null;
+
+  if (req.file) {
+    const { originalname, path } = req.file;
+    const ext = originalname.split('.').pop();
+    newPath = `${path}.${ext}`;
+    fs.renameSync(path, newPath);
+  }
+
+  const { token } = req.cookies;
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  jwt.verify(token, jwtSecret, {}, async (err, info) => {
+    if (err) return res.status(403).json({ message: 'Token invalid', error: err.message });
+
+    const { id, title, summary, content } = req.body;
+    let postDoc;
+
+    try {
+      postDoc = await Post.findById(id);
+      if (!postDoc) return res.status(404).json({ message: 'Post not found' });
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid post ID', error: err.message });
+    }
+
+    if (postDoc.author.toString() !== info.id) {
+      return res.status(403).json({ message: 'You are not the author of this post' });
+    }
+
+    postDoc.title = title;
+    postDoc.summary = summary;
+    postDoc.content = content;
+    if (newPath) postDoc.cover = newPath;
+
+    try {
+      await postDoc.save();
       res.json(postDoc);
-    });
-  } catch (err) {
-    console.error("Post creation error:", err);
-    res.status(500).json({ error: "Failed to create post" });
-  }
+    } catch (err) {
+      res.status(500).json({ message: 'Failed to update post', error: err.message });
+    }
+  });
 });
 
-// Get Posts
-// Get Posts
+
+
+//get route of post
 app.get('/post', async (req, res) => {
-  try {
-    const posts = await Post.find()
-      .populate('author', ['username'])  // Ensure it populates 'username' from User model
-      .sort({ createdAt: -1 })
-      .limit(20);
-    res.json(posts);
-  } catch (err) {
-    console.error('Failed to fetch posts:', err);
-    res.status(500).json({ error: 'Failed to fetch posts' });
-  }
+  const posts = await Post.find()
+    .populate('author', ['username']) 
+    .sort({ createdAt: -1 })
+    .limit(20);        
+  res.json(posts);
 });
 
-
-// Get Single Post
-// Get Single Post
+//post id route
 app.get('/post/:id', async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid post ID format' });
+  }
+
   try {
-    const post = await Post.findById(req.params.id).populate('author', ['username']);
-    if (!post) return res.status(404).json({ error: 'Post not found' });
-    res.json(post);
-  } catch (err) {
-    console.error('Failed to fetch post:', err);
-    res.status(500).json({ error: 'Failed to fetch post' });
+    const postDoc = await Post.findById(id).populate('author', ['username']);
+
+    if (!postDoc) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    res.json(postDoc);
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching post', error: e.message });
   }
 });
+
+
+
 
 
 app.listen(4000, () => {
-  console.log("Server is running on port 4000");
+  console.log('Server is running on port 4000');
 });

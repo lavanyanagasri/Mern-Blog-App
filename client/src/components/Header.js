@@ -1,55 +1,61 @@
-import React, { useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { UserContext } from '../UserContext';
+import { Link } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { UserContext } from "../UserContext";
 
-const Header = () => {
-  const { userinfo, setuserinfo } = useContext(UserContext);
+export default function Header() {
+  const {setuserinfo,userinfo} = useContext(UserContext);
+  useEffect(()=>{
+     fetch('http://localhost:4000/profile',{
+       credentials:'include',
 
-  useEffect(() => {
-    fetch('http://localhost:4000/profile', {
-      credentials: 'include',
-    })
-      .then(response => response.json())
-      .then(userinfo => {
-        setuserinfo(userinfo);
-      })
-      .catch(error => {
-        console.error('Error fetching profile:', error);
-      });
-  }, [setuserinfo]); // ✅ Added dependency
+     }).then((response=>{
+        response.json().then(userinfo=>{
+          setuserinfo(userinfo);
+        })
+     }))
+  },[]);
 
   function logout() {
-    fetch('http://localhost:4000/logout', {
-      method: 'POST',
-      credentials: 'include',
-    }).then(() => {
-      setuserinfo(null);
-    });
-  }
+  fetch('http://localhost:4000/logout', {
+    credentials: 'include',
+    method: 'POST',
+  }).then(() => setuserinfo(null)); 
+}
 
-  const user = userinfo?.user;
+const username=userinfo?.username;
 
   return (
-    <div className="flex justify-between pt-11 pb-10 items-center">
-      <Link to="/">
-        <h1 className="text-2xl font-medium">My Blog</h1>
+    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
+      <Link to="/" className="text-2xl font-bold text-blue-600">
+        MyBlog
       </Link>
-      <nav>
-        {user ? (
-          <div className="space-x-2 flex items-center pl-12">
-           
-            <Link to="/create" className='w-44'>Create new post</Link>
-            <button onClick={logout} className='w-20'>Logout</button>
-          </div>
-        ) : (
-          <div className="space-x-12">
-            <Link to="/login" className="text-lg font-medium">Login</Link>
-            <Link to="/register" className="text-lg font-medium">Register</Link>
-          </div>
-        )}
+      <nav className="flex gap-4">
+        {username &&(
+          <>
+           <Link to='/create'>create new post</Link>
+           <a onClick={logout}>Logout</a>
+          </>
+        )
+        }
+        {!username &&(
+          <>
+           <Link
+          to="/login"
+          className="text-gray-700 hover:text-blue-500 transition duration-200"
+        >
+          Login
+        </Link>
+        <Link
+          to="/register"
+          className="text-gray-700 hover:text-blue-500 transition duration-200"
+        >
+          Register
+        </Link>
+          </>
+        )
+        }
+        
       </nav>
-    </div>
+    </header>
   );
-};
-
-export default Header;
+}

@@ -1,20 +1,25 @@
-import Post from "../components/Post";
-import {useEffect, useState} from "react";
+import React from 'react'
+import { useState } from 'react';
+import { useEffect } from 'react'
+import Postpage from './Postpage';
 
-export default function Index() {
-  const [posts,setPosts] = useState([]);
-  useEffect(() => {
-    fetch('http://localhost:4000/post').then(response => {
-      response.json().then(posts => {
-        setPosts(posts);
-      });
-    });
-  }, []);
+const Index = () => {
+  const [posts,setposts]=useState([]);
+  useEffect(()=>{
+    fetch('http://localhost:4000/post').then(response=>{
+      response.json().then(posts=>{
+        setposts(posts);
+      })
+    })
+  },[]);
   return (
-    <>
+    <div>
       {posts.length > 0 && posts.map(post => (
-        <Post key={post._id}  {...post} />
-      ))}
-    </>
-  );
+  <Postpage key={post._id} {...post} />
+))}
+
+    </div>
+  )
 }
+
+export default Index

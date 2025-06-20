@@ -7,7 +7,7 @@ export default function Editpost() {
   const [title,setTitle] = useState('');
   const [summary,setSummary] = useState('');
   const [content,setContent] = useState('');
-  const [files, setFiles] = useState('');
+  const [files, setFiles] = useState(null);
   const [redirect,setRedirect] = useState(false);
 
   useEffect(() => {
@@ -19,27 +19,38 @@ export default function Editpost() {
           setSummary(postInfo.summary);
         });
       });
-  }, []);
+  }, [id]);
 
   async function updatePost(ev) {
-    ev.preventDefault();
-    const data = new FormData();
-    data.set('title', title);
-    data.set('summary', summary);
-    data.set('content', content);
-    data.set('id', id);
-    if (files?.[0]) {
-      data.set('file', files?.[0]);
-    }
-    const response = await fetch('http://localhost:4000/post', {
-      method: 'PUT',
+  ev.preventDefault();
+
+  const data = new FormData();
+  data.set('title', title);
+  data.set('summary', summary);
+  data.set('content', content);
+  data.set('id', id);
+
+  if (files?.[0]) {
+    data.set('file', files[0]);
+  }
+
+  try {
+    const response = await fetch('http://localhost:4000/post1', {
+      method: 'POST',
       body: data,
       credentials: 'include',
     });
+
     if (response.ok) {
       setRedirect(true);
+    } else {
+      const errMsg = await response.text();
+      console.error('PUT failed:', errMsg);
     }
+  } catch (error) {
+    console.error('Fetch error:', error.message);
   }
+}
 
   if (redirect) {
     return <Navigate to={'/post/'+id} />

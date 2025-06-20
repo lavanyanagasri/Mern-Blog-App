@@ -1,75 +1,68 @@
 import React, { useState } from 'react';
 
 const Register = () => {
-  const [user, setUser] = useState('');
+  const [username, setUser] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
   async function register(e) {
     e.preventDefault();
-
     try {
       const response = await fetch('http://localhost:4000/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ user, password })
+        body: JSON.stringify({ username, password }),
+        headers: { 'Content-Type': 'application/json' },
       });
-
-      const data = await response.json();
 
       if (response.ok) {
         setMessage('Registration successful!');
-        setUser('');
-        setPassword('');
       } else {
-        setMessage(data.message || 'Registration failed.');
+        const errorData = await response.json();
+        setMessage(errorData.message || 'Registration failed');
       }
-
     } catch (err) {
-      console.error('Error:', err);
-      setMessage('An error occurred. Please try again.');
+      setMessage('Something went wrong. Try again.');
     }
   }
 
   return (
-    <form onSubmit={register} className="flex flex-col items-center pt-12">
-      <div className="w-full max-w-md space-y-6 px-8">
-        <h1 className="text-center text-3xl font-semibold">Register</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={register}
+        className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">Register</h2>
+
+        {message && (
+          <div className="mb-4 text-sm text-center text-red-500">{message}</div>
+        )}
 
         <input
           type="text"
-          name="username"
+          value={username}
           placeholder="Username"
-          value={user}
-          onChange={e => setUser(e.target.value)}
-          autoComplete="username"
-          className="border border-gray-300 rounded px-4 py-2 w-full"
+          onChange={(e) => setUser(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           required
         />
 
         <input
           type="password"
-          name="password"
-          placeholder="Password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
-          autoComplete="new-password"
-          className="border border-gray-300 rounded px-4 py-2 w-full"
+          placeholder="Password"
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           required
         />
 
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full hover:bg-blue-600"
+          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
         >
           Register
         </button>
-
-        {message && <p className="text-center text-sm text-red-600">{message}</p>}
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 
