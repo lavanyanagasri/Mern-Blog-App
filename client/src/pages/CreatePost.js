@@ -10,7 +10,7 @@ export default function Createpost() {
   const [content, setContent] = useState('');
   const [files, setFiles] = useState('');
   const [redirect, setRedirect] = useState(false);
-
+  const BASE_URL = process.env.REACT_APP_API_URL;
   async function createNewPost(ev) {
     ev.preventDefault();
 
@@ -20,7 +20,7 @@ export default function Createpost() {
     data.set('content', content);
     data.set('file', files[0]);
 
-    const response = await fetch('http://localhost:4000/post', {
+    const response = await fetch(`${BASE_URL}/post`, {
       method: 'POST',
       body: data,
       credentials: 'include',

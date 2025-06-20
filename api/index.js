@@ -30,7 +30,7 @@ app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads')); // serve static files
 
 // ✅ Connect to MongoDB
-mongoose.connect('mongodb+srv://lavanyanagasri:lavanyanagasri@cluster1.pp2m8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1')
+mongoose.connect('mongodb+srv://lavanyanagasri:lavanyanagasri@cluster1.pp2m8.mongodb.net/blogApp?retryWrites=true&w=majority&appName=Cluster1')
   .then(() => console.log('MongoDB connected!'))
   .catch((e) => console.error('MongoDB connection error:', e));
 

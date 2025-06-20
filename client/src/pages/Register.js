@@ -4,11 +4,11 @@ const Register = () => {
   const [username, setUser] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-
+  const BASE_URL = process.env.REACT_APP_API_URL;
   async function register(e) {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/register', {
+      const response = await fetch(`${BASE_URL}/register`, {
         method: 'POST',
         body: JSON.stringify({ username, password }),
         headers: { 'Content-Type': 'application/json' },
